@@ -1,0 +1,125 @@
+\documentclass[12pt, a4paper, dvipdfmx]{jarticle}
+\usepackage{listings,jlisting}
+\usepackage[dvipsnames]{xcolor}
+\lstset{
+basicstyle={\ttfamily},
+identifierstyle={\small},
+commentstyle={\color{OliveGreen}},
+keywordstyle={\small\bfseries\color{RedViolet}},
+ndkeywordstyle={\small},
+stringstyle={\small\ttfamily},
+frame={tb},
+breaklines=true,
+columns=[l]{fullflexible},
+numbers=left,
+xrightmargin=0zw,
+xleftmargin=3zw,
+numberstyle={\scriptsize},
+stepnumber=1,
+numbersep=1zw,
+lineskip=-0.5ex
+}
+\title{アルゴリズム第二レポート}
+\author{62213887 中川　和親}
+\begin{document}
+
+\section{趣旨}
+本レポートでは、最短経路問題の代表的
+アルゴリズムであるダイクストラ法と
+ベルマンフォード法の比較を行うことを目的とする。
+アルゴリズム本体の実装はC++を用いることとするが、
+グラフの入力はPythonを用いて行う。
+今回の入力となるグラフはWikipediaのページである。
+Wikipediaのページ一つをノードとし、さらに
+そこに挿入されたリンクをエッジとして扱う。
+重みはリンク数の違い、すなわち単語の一般性の違いと言い換えられそうである。
+リンクがたくさん貼られているページは抽象的でかつ関連性の高い、つまり
+認知度が高いページと考えられなくない。
+逆に、リンクが少ないページは具体的でかつ関連性の低いページであるということである。
+
+このアルゴリズムは、「いかに同じくらいの認知度のページを最小回経由してそのページに辿り着くか」
+という問いに対して、最短経路を求めることで解答を導くものである。
+実用性に関しては今回は考慮しない。
+
+\section{グラフ表現に用いるファイル}
+Pythonのプログラムにより生成されたvertexN.csvというファイルが存在する。
+今回は0~119の120の頂点数をもつグラフを扱う。
+このファイルは、「単語名、重み、リンク先頂点番号1、リンク先頂点番号2...」という形式で保存されている。
+例えば、vertex4.csvは以下のようになっている。
+\lstinputlisting[title=vertex4.csv]{vertex4.csv}
+これは「メモリアル・トーナメント」という単語があり、この頂点に移動する辺は
+3の重みを持つということになる。また、この単語は頂点5,9,13への辺を持つことがわかる。
+また、頂点と単語の対応はword2index.csvを用いても可能である。
+
+\section{実装部分}
+実装は隣接リストを用いたダイクストラ法と隣接行列を用いたダイクストラ法
+、最後にベルマンフォード法で実装した。
+
+それぞれの実行結果が一致したため、今回は全て正しく実装できたものとする。
+実際に検証する際にはのちに示す再現方法の章を参照してください。
+\begin{lstlisting}[caption=コンパイル方法,label=sample]
+  cd bin
+  clang++ -std=c++11 -o dlist ../adj_list/dijkstra.cpp
+  clang++ -std=c++11 -o dmatrix ../adj_matrix/dijkstra.cpp
+  clang++ -std=c++11 -o bf ../adj_list/bellman_ford.cpp
+\end{lstlisting}
+コンパイラは適宜読み替えてください。
+\begin{lstlisting}[caption=それぞれの実行結果,label=sample]
+  % ./dlist 0 5
+  アルゴリズム(1) -> 図書館ソート(5) -> トーナメントソート(2) -> メモリアル・トーナメント(3) -> ケビン・ナ(3)
+  Time: 0.000151
+  % ./dmat 0 5
+  アルゴリズム(1) -> 図書館ソート(5) -> トーナメントソート(2) -> メモリアル・トーナメント(3) -> ケビン・ナ(3)
+  Time: 0.000699
+  % ./bf 0 5
+  アルゴリズム(1) -> 図書館ソート(5) -> トーナメントソート(2) -> メモリアル・トーナメント(3) -> ケビン・ナ(3)
+  Time: 0.000231
+\end{lstlisting}
+私はzshを利用しているため、\%が先頭についているが、これはプロンプトを表している。
+0はアルゴリズムに与えられた番号で、始点を表している。
+5はケビン・ナに与えられた番号で、終点を表している。
+以下のようにリンクを辿れば、なるべく同程度の認知度のページを経由してケビン・ナにたどり着くことができる。
+
+\section{比較方法とその結果}\label{section:compare}
+ルートによってアルゴリズムの性能が変わる可能性に備え、
+Pythonを用いてそれぞれのアルゴリズムに対して10回ずつランダムな位置2点の最短経路を求めさせた。
+その実行結果の平均と標準偏差を求め、表\ref{tab:table1}にまとめた。
+先ほどのコンパイルののちtester.pyを実行すれば似たような結果が得られる。
+
+\begin{table}[h]
+  \centering
+  \caption{アルゴリズムの性能比較} \label{tab:table1}
+  \begin{tabular}{|c||c|c|}
+    \hline
+    アルゴリズム       & 平均時間(s)   & 標準偏差(s)   \\
+    \hline
+    \hline
+    隣接リストダイクストラ法 & 0.0001466 & 7.06e-06  \\
+    \hline
+    隣接行列ダイクストラ法  & 0.0005341 & 0.000209  \\
+    \hline
+    ベルマンフォード法    & 0.0002624 & 2.167e-05 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{考察}
+graph\_info.pyに辺をカウントするプログラムを生成したところ、このグラフの変数$E$は
+236である。また、頂点数$V$は120である。
+このことから、$V log V = 828.83$は$E$と比べて大きく、
+隣接リストダイクストラ法の方が性能が良いことが予測される。
+章\ref{section:compare}の結果はその通りになっている。
+
+しかしながら、隣接行列ダイクストラ法はベルマンフォード法より
+性能が悪い結果となった。今回扱ったグラフは疎なグラフなので、
+隣接行列の長さが小さく、その結果ループの回る回数が小さいのではないだろうか。
+その結果、0の多い隣接行列をいちいち走査する隣接行列ダイクストラ法に不利な結果
+となったのではないだろうか。
+
+\section{再現方法について}
+このレポートの内容を再現するためには、以下の手順を踏む必要がある。
+\begin{lstlisting}[caption=リポジトリのクローン,label=sample]
+ git clone https://www.github.com/KazuchikaNakagawa/algorithm2.git
+\end{lstlisting}
+
+\end{document}
